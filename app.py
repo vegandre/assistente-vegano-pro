@@ -2,26 +2,28 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# Configuração da página
+# 1. Configuração da página
 st.set_page_config(page_title="Assistente Vegano Pro", page_icon="🌱")
 
 st.title("🌱 Assistente Nutricional Vegano")
 
-# URL corrigida (removidos espaços e caracteres invisíveis)
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1V_hGeCQjeVMnn0IKLRd7792kMgWxWSGr/edit#gid=1577491175"
-URL_PLANILHA = URL_PLANILHA.strip()
+# 2. URL da planilha - Limpando caracteres invisíveis automaticamente
+URL_ORIGINAL = "https://docs.google.com/spreadsheets/d/1V_hGeCQjeVMnn0IKLRd7792kMgWxWSGr/edit#gid=1577491175"
+URL_LIMPA = URL_ORIGINAL.strip()
 
 try:
-    # Conexão simplificada
+    # 3. Estabelecendo a conexão
     conn = st.connection("gsheets", type=GSheetsConnection)
     
-    # Tentativa de leitura da aba específica
-    df = conn.read(spreadsheet=URL_PLANILHA, worksheet="LISTA ALIMENTOS", header=7)
+    # 4. Lendo os dados da aba específica
+    # O parâmetro header=7 indica que os títulos estão na linha 8 do Excel (índice 7 no Python)
+    df = conn.read(spreadsheet=URL_LIMPA, worksheet="LISTA ALIMENTOS", header=7)
     
-    st.success("✅ Dados carregados com sucesso!")
-    st.write("### Prévia da Lista de Alimentos:")
-    st.dataframe(df.head(10)) # Mostra as 10 primeiras linhas para teste
+    # 5. Exibindo mensagem de sucesso e os dados
+    st.success("✅ Conexão estabelecida com sucesso!")
+    st.subheader("Visualização dos dados da planilha:")
+    st.dataframe(df.head(10))
 
 except Exception as e:
-    st.error(f"Erro ao conectar: {e}")
-    st.info("Dica: Verifique se o nome da aba na planilha é exatamente 'LISTA ALIMENTOS' (com letras maiúsculas).")
+    st.error(f"Erro ao conectar com a planilha: {e}")
+    st.info("Dica: Verifique se o nome da aba na planilha é exatamente 'LISTA ALIMENTOS' e se ela está compartilhada corretamente.")
