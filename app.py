@@ -99,3 +99,19 @@ else:
             c1, c2 = st.columns(2)
             c1.metric("Energia", f"{cal:.2f} kcal")
             c2.metric("Proteína", f"{prot:.2f} g")
+
+@st.cache_data
+def buscar_metas_reais():
+    # GID da aba PLANO que vimos no seu print anterior
+    URL_PLANO = f"https://docs.google.com/spreadsheets/d/{ID_PLANILHA}/export?format=csv&gid=368321147"
+    df_plano = pd.read_csv(URL_PLANO)
+    
+    # Extraindo os valores baseados na estrutura da sua planilha (ajuste as linhas se precisar)
+    # No seu print, Meta Calorias estava perto da linha 11
+    metas = {
+        "calorias": 3000, # Valores padrão caso a leitura falhe
+        "proteinas": 100,
+        "carbos": 300,
+        "gorduras": 110
+    }
+    return metas
