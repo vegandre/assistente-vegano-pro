@@ -7,24 +7,26 @@ st.set_page_config(page_title="Assistente Vegano Pro", page_icon="🌱")
 
 st.title("🌱 Assistente Nutricional Vegano")
 
-# 1. Definição da URL (Cuidado extra para não haver espaços antes ou depois)
-url_bruta = "https://docs.google.com/spreadsheets/d/1V_hGeCQjeVMnn0IKLRd7792kMgWxWSGr/edit#gid=1577491175"
+# 1. Definindo a URL de forma ultra-limpa
+# Certifique-se de que não há espaços antes ou depois das aspas
+url_base = "https://docs.google.com/spreadsheets/d/1V_hGeCQjeVMnn0IKLRd7792kMgWxWSGr/edit#gid=1577491175"
 
-# 2. LIMPEZA TOTAL: Remove espaços, quebras de linha e caracteres ocultos
-URL_FINAL = url_bruta.strip().replace("\n", "").replace("\r", "")
+# 2. Limpeza profunda de caracteres invisíveis
+url_final = "".join(url_base.split()) 
 
 try:
-    # 3. Criar a conexão ignorando configurações externas problemáticas
+    # 3. Estabelecendo a conexão
     conn = st.connection("gsheets", type=GSheetsConnection)
     
-    # 4. Tentar ler a aba específica
-    df = conn.read(spreadsheet=URL_FINAL, worksheet="LISTA ALIMENTOS", header=7)
+    # 4. Leitura dos dados
+    # header=7 indica que os nomes das colunas estão na linha 8 da planilha
+    df = conn.read(spreadsheet=url_final, worksheet="LISTA ALIMENTOS", header=7)
     
     if df is not None:
         st.success("✅ Conexão estabelecida com sucesso!")
-        st.subheader("Prévia dos Alimentos:")
+        st.subheader("Prévia dos Alimentos Carregados:")
         st.dataframe(df.head(10))
 
 except Exception as e:
-    st.error(f"Erro técnico detectado: {e}")
-    st.info("Dica: Vá nos 'Secrets' do Streamlit e verifique se não há linhas em branco lá.")
+    st.error(f"Erro ao carregar dados: {e}")
+    st.info("Verifique se o nome da aba na sua planilha é exatamente: LISTA ALIMENTOS")
