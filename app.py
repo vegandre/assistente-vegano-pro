@@ -5,24 +5,21 @@ import pandas as pd
 st.set_page_config(page_title="Assistente Vegano Pro", page_icon="🌱")
 st.title("🌱 Teste de Conexão Vegana")
 
-# 1. Usando apenas o ID da planilha (mais seguro contra erros de colagem)
-ID_PLANILHA = "1V_hGeCQjeVMnn0IKLRd7792kMgWxWSGr"
-URL_LIMPA = f"https://docs.google.com/spreadsheets/d/{ID_PLANILHA}/edit#gid=1577491175"
+# Link direto e ID isolado para evitar erros de caractere
+ID = "1V_hGeCQjeVMnn0IKLRd7792kMgWxWSGr"
+URL = f"https://docs.google.com/spreadsheets/d/{ID}/edit#gid=1577491175"
 
 try:
+    # Criando a conexão do zero
     conn = st.connection("gsheets", type=GSheetsConnection)
     
-    # 2. Tentando ler removendo qualquer espaço extra no nome da aba
-    df = conn.read(
-        spreadsheet=URL_LIMPA, 
-        worksheet="LISTA ALIMENTOS", 
-        header=7
-    )
+    # Lendo a aba que acabamos de renomear para 'dados'
+    # O .strip() garante que não escape nenhum espaço
+    df = conn.read(spreadsheet=URL.strip(), worksheet="dados", header=7)
     
-    st.success("✅ Finalmente conectamos!")
-    st.dataframe(df.head())
+    st.success("✅ Conectado com sucesso!")
+    st.dataframe(df.head(10))
 
 except Exception as e:
-    # Exibe o erro de forma mais detalhada para investigarmos
-    st.error(f"Erro detectado: {e}")
-    st.info("Dica: Se o erro persistir, verifique se a aba no Google Sheets se chama exatamente 'LISTA ALIMENTOS' sem espaços no final.")
+    st.error(f"Erro técnico: {e}")
+    st.info("Se o erro de 'control characters' persistir, limpe os SECRETS no painel do Streamlit.")
