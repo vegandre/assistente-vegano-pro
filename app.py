@@ -4,21 +4,24 @@ import pandas as pd
 st.set_page_config(page_title="Assistente Vegano Pro", page_icon="🌱")
 st.title("🌱 Assistente Nutricional Vegano")
 
-# Link de exportação direta da aba 'dados'
-URL_CSV = "https://docs.google.com/spreadsheets/d/1V_hGeCQjeVMnn0IKLRd7792kMgWxWSGr/export?format=csv&gid=1577491175"
+# 1. Seus dados extraídos do print
+ID_PLANILHA = "1bifCd5RseTG-MYvJa3aJwqk0Mdk9-31tfH4BbO2un0w"
+GID_ABA = "368321147"
+
+# 2. Montagem do link de exportação direta
+URL_FINAL = f"https://docs.google.com/spreadsheets/d/{ID_PLANILHA}/export?format=csv&gid={GID_ABA}"
 
 try:
-    # Lendo diretamente o CSV do Google Sheets
-    # header=7 pula as linhas decorativas que vimos no seu print
-    df = pd.read_csv(URL_CSV, header=7)
+    # 3. Lendo os dados (header=7 pula as linhas de topo da sua planilha)
+    df = pd.read_csv(URL_FINAL, header=7)
     
     if not df.empty:
-        st.success("✅ DADOS CARREGADOS COM SUCESSO!")
-        st.write("### Tabela de Alimentos:")
+        st.success("✅ CONEXÃO ESTABELECIDA COM SUCESSO!")
+        st.write("### Lista de Alimentos carregada:")
         st.dataframe(df)
     else:
-        st.warning("A planilha parece estar vazia nesta aba.")
+        st.warning("A conexão funcionou, mas não encontrei dados na linha 8 em diante.")
 
 except Exception as e:
-    st.error(f"Erro ao ler planilha: {e}")
-    st.info("Verifique se a planilha está em 'Qualquer pessoa com o link pode ler'.")
+    st.error(f"Erro crítico ao acessar os dados: {e}")
+    st.info("Verifique se a nova planilha está com acesso para 'Qualquer pessoa com o link'.")
