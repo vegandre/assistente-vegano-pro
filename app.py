@@ -15,8 +15,19 @@ URL_PERFIL = f"https://docs.google.com/spreadsheets/d/{ID_PLANILHA}/export?forma
 @st.cache_data
 def carregar_alimentos():
     df = pd.read_csv(URL_ALIMENTOS, header=7)
-    return df.dropna(how='all', axis=1).dropna(how='all', axis=0)
-
+    df = df.dropna(how='all', axis=1).dropna(how='all', axis=0)
+    
+    # Lista das colunas que devem ser números
+    colunas_numericas = ['CALORIAS', 'PROTEÍNAS', 'CARBOIDRATOS', 'GORDURAS', 'FIBRA']
+    
+    for col in colunas_numericas:
+        if col in df.columns:
+            # 1. Transforma tudo em texto
+            # 2. Troca a vírgula por ponto
+            # 3. Converte para número (float), ignorando erros
+            df[col] = pd.to_numeric(df[col].astype(str).str.replace(',', '.'), errors='coerce')
+            
+    return df
 @st.cache_data
 def carregar_perfil():
     # Carrega os dados do seu perfil (Nome, Idade, Metas)
