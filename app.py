@@ -2,75 +2,53 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# --- CONFIGURAÇÃO VISUAL (FOCO EM LEGIBILIDADE E PROFISSIONALISMO) ---
+# --- CONFIGURAÇÃO VISUAL ---
 st.set_page_config(page_title="Assistente Vegano Pro", page_icon="🌱", layout="wide")
 
-# CSS para um tema Light limpo, tipografia moderna e contraste alto
 st.markdown("""
     <style>
-    /* Importando fontes modernas */
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
 
-    /* Fundo claro para o app */
-    .stApp { background-color: #FFFFFF; }
+    /* 1. ESCONDER O TEXTO 'keyboard_double' E AJUSTAR CABEÇALHO */
+    header {visibility: hidden;}
+    [data-testid="stSidebarNav"] {padding-top: 20px;}
     
-    /* Configuração global de texto para legibilidade máxima */
-    html, body, [class*="css"], .stText, .stMarkdown, p, span, label { 
+    /* 2. FUNDO E TEXTO */
+    .stApp { background-color: #FFFFFF; }
+    html, body, [class*="css"], p, span, label { 
         font-family: 'Roboto', sans-serif !important; 
-        color: #333333 !important; /* Texto principal em cinza escuro */
-        font-weight: 400;
+        color: #333333 !important; 
     }
 
-    /* Estilo para Títulos Principais */
-    h1 { color: #1B5E20 !important; font-weight: 700 !important; font-size: 42px !important; margin-bottom: 20px !important;}
-    h2, h3 { color: #2E7D32 !important; font-weight: 700 !important; margin-top: 15px !important;}
+    /* 3. TÍTULOS */
+    h1 { color: #1B5E20 !important; font-weight: 700 !important; padding-top: 0px; }
+    h2, h3 { color: #2E7D32 !important; font-weight: 700 !important; }
 
-    /* Menu Lateral Escuro (contraste clássico) */
-    [data-testid="stSidebar"] { 
-        background-color: #1A1A1A !important; 
-        color: #FFFFFF !important; 
-    }
-    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label { 
-        color: #E0E0E0 !important; 
-    }
+    /* 4. SIDEBAR (MENU LATERAL) */
+    [data-testid="stSidebar"] { background-color: #1A1A1A !important; }
+    [data-testid="stSidebar"] * { color: #E0E0E0 !important; }
 
-    /* Botões Profissionais (Sólidos e Robustos) */
+    /* 5. BOTÕES */
     .stButton>button { 
         background-color: #388E3C; 
         color: white !important; 
-        border-radius: 6px; 
+        border-radius: 8px; 
         font-weight: 700; 
         width: 100%; 
         border: none;
-        padding: 12px;
-        font-size: 16px;
-        transition: background-color 0.3s;
+        padding: 10px;
     }
-    .stButton>button:hover { background-color: #2E7D32; }
+    .stButton>button:hover { background-color: #2E7D32; border: none; }
 
-    /* Estilização das Métricas */
+    /* 6. MÉTRICAS E TABELAS */
     [data-testid="stMetricValue"] { color: #388E3C !important; font-size: 32px !important; font-weight: 700 !important; }
-    [data-testid="stMetricLabel"] { color: #666666 !important; font-size: 14px !important;}
-    
-    /* Tabela do Carrinho Limpa */
-    .styled-table { 
-        width: 100%; 
-        border-collapse: collapse; 
-        margin: 20px 0; 
-        font-size: 16px; 
-        background-color: white; 
-        border-radius: 8px; 
-        overflow: hidden; 
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    }
-    .styled-table th { background-color: #E8F5E9; color: #1B5E20; font-weight: 700; padding: 12px; }
-    .styled-table td { padding: 10px; border-bottom: 1px solid #EEEEEE; color: #555555; }
+    .stTable { background-color: white; border-radius: 10px; border: 1px solid #f0f0f0; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- BANCO DE DADOS (LINKS DA SUA PLANILHA) ---
+# --- BANCO DE DADOS ---
 ID_PLANILHA = "1bifCd5RseTG-MYvJa3aJwqk0Mdk9-31tfH4BbO2un0w"
-GID_DADOS = "1577491175"  # Aba de Alimentos
+GID_DADOS = "1577491175"
 URL_ALIMENTOS = f"https://docs.google.com/spreadsheets/d/{ID_PLANILHA}/export?format=csv&gid={GID_DADOS}"
 
 @st.cache_data
@@ -83,30 +61,25 @@ def carregar_alimentos():
             df[col] = pd.to_numeric(df[col].astype(str).str.replace(',', '.'), errors='coerce')
     return df
 
-# --- CONTROLE DE SESSÃO E LOGIN ---
+# --- LOGIN E SESSÃO ---
 if 'logado' not in st.session_state: st.session_state.logado = False
 if 'usuario' not in st.session_state: st.session_state.usuario = ""
 if 'carrinho' not in st.session_state: st.session_state.carrinho = []
 
-# --- TELA DE ACESSO ---
 if not st.session_state.logado:
     st.title("🌱 Assistente Nutricional Vegano")
-    st.write("### Por favor, identifique-se para acessar o painel.")
-    
-    col_l, col_r = st.columns([1, 1])
-    with col_l:
-        email = st.text_input("Digite seu e-mail:")
-        if st.button("Acessar Painel"):
-            if "@" in email:
-                st.session_state.logado = True
-                st.session_state.usuario = email
-                st.rerun()
+    email = st.text_input("Seu e-mail:")
+    if st.button("Entrar no Painel"):
+        if "@" in email:
+            st.session_state.logado = True
+            st.session_state.usuario = email
+            st.rerun()
 else:
-    # --- MENU LATERAL (ESCURO PARA CONSTRASTE) ---
-    st.sidebar.markdown("## 🌱 Painel Vegano")
-    st.sidebar.write(f"Conectado como: \n**{st.session_state.usuario}**")
+    # --- BARRA LATERAL ---
+    st.sidebar.markdown("### 🌱 Painel Vegano")
+    st.sidebar.write(f"Usuário: \n**{st.session_state.usuario}**")
     st.sidebar.divider()
-    pagina = st.sidebar.radio("Navegação:", ["🍽️ Montar Refeição", "📅 Histórico", "🔍 Banco de Alimentos"])
+    pagina = st.sidebar.radio("Ir para:", ["🍽️ Montar Refeição", "📅 Histórico", "🔍 Alimentos"])
     
     if st.sidebar.button("Sair"):
         st.session_state.logado = False
@@ -114,57 +87,53 @@ else:
 
     df_ali = carregar_alimentos()
 
-    # --- PÁGINA: DIÁRIO ---
     if pagina == "🍽️ Montar Refeição":
         st.header("🍽️ Diário de Refeições")
         col1, col2 = st.columns([1, 1.2])
 
         with col1:
-            st.subheader("➕ Adicionar Alimento")
-            ali_sel = st.selectbox("Escolha o alimento:", df_ali.iloc[:, 0].unique())
-            qtd = st.number_input("Quantidade (gramas):", min_value=1, value=100, step=10)
+            st.subheader("➕ Adicionar")
+            ali_sel = st.selectbox("Alimento:", df_ali.iloc[:, 0].unique())
+            qtd = st.number_input("Peso (g):", min_value=1, value=100, step=10)
             
             if st.button("Adicionar ao Prato"):
-                dados = df_ali[df_ali.iloc[:, 0] == ali_sel].iloc[0]
+                row = df_ali[df_ali.iloc[:, 0] == ali_sel].iloc[0]
                 fator = qtd / 100
                 st.session_state.carrinho.append({
                     "Alimento": ali_sel,
                     "Gramas": int(qtd),
-                    "Kcal": round(dados['CALORIAS'] * fator, 1),
-                    "Prot(g)": round(dados['PROTEÍNAS'] * fator, 1)
+                    "Kcal": round(row['CALORIAS'] * fator, 1),
+                    "Prot(g)": round(row['PROTEÍNAS'] * fator, 1)
                 })
                 st.toast(f"✅ {ali_sel} adicionado!")
 
         with col2:
-            st.subheader("🛒 Itens Selecionados")
+            st.subheader("🛒 Resumo do Prato")
             if st.session_state.carrinho:
                 df_c = pd.DataFrame(st.session_state.carrinho)
+                df_exibir = df_c.copy()
+                df_exibir['Kcal'] = df_exibir['Kcal'].map('{:.1f}'.format)
+                df_exibir['Prot(g)'] = df_exibir['Prot(g)'].map('{:.1f}'.format)
                 
-                # Formatação Limpa dos Números
-                df_c['Kcal'] = df_c['Kcal'].map('{:.1f}'.format)
-                df_c['Prot(g)'] = df_c['Prot(g)'].map('{:.1f}'.format)
+                st.table(df_exibir)
                 
-                st.table(df_c)
-                
-                # Totais (calculados dos originais)
-                df_orig = pd.DataFrame(st.session_state.carrinho)
-                t_kcal = df_orig['Kcal'].sum()
-                t_prot = df_orig['Prot(g)'].sum()
+                t_kcal = df_c['Kcal'].sum()
+                t_prot = df_c['Prot(g)'].sum()
                 
                 st.divider()
                 c1, c2 = st.columns(2)
-                c1.metric("Energia Total", f"{t_kcal:.1f} kcal")
-                c2.metric("Proteína Total", f"{t_prot:.1f} g")
+                c1.metric("Energia", f"{t_kcal:.1f} kcal")
+                c2.metric("Proteína", f"{t_prot:.1f} g")
                 
-                if st.button("🗑️ Limpar Carrinho"):
+                if st.button("🗑️ Limpar Tudo"):
                     st.session_state.carrinho = []
                     st.rerun()
             else:
-                st.info("Adicione um alimento à esquerda para começar!")
+                st.info("O seu prato está vazio.")
 
-    elif pagina == "🔍 Banco de Alimentos":
-        st.header("🔍 Banco de Alimentos")
-        busca = st.text_input("Pesquisar:")
+    elif pagina == "🔍 Alimentos":
+        st.header("🔍 Consulta Nutricional")
+        busca = st.text_input("Buscar alimento:")
         df_f = df_ali.copy()
         if busca:
             df_f = df_f[df_f.iloc[:, 0].str.contains(busca, case=False, na=False)]
