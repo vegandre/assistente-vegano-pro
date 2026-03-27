@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# --- 2. CSS PERSONALIZADO ---
+# --- 2. CSS PERSONALIZADO (ESTILIZAÇÃO AVANÇADA) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
@@ -23,20 +23,65 @@ st.markdown("""
         color: #FFFFFF !important;
     }
 
+    /* Estilização da Barra Lateral */
     [data-testid="stSidebar"] { 
-        background: rgba(14, 2, 26, 0.9) !important;
-        border-right: 1px solid rgba(136, 14, 186, 0.3);
+        background: rgba(14, 2, 26, 0.95) !important;
+        border-right: 2px solid rgba(136, 14, 186, 0.5);
+    }
+
+    /* Títulos e Labels no Menu Lateral */
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] .stMarkdown {
+        color: #00FFCC !important;
+        font-weight: 700 !important;
+    }
+
+    /* Estilização dos Radio Buttons (Menu Lateral) */
+    div[data-testid="stSidebarUserContent"] .st-emotion-cache-1647ite {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid rgba(136, 14, 186, 0.2);
+        transition: all 0.3s ease;
+    }
+    
+    div[data-testid="stSidebarUserContent"] label {
+        font-size: 18px !important;
+        color: #FFFFFF !important;
+        cursor: pointer;
+    }
+
+    /* Destaque para o item selecionado */
+    div[data-testid="stSidebarUserContent"] .st-emotion-cache-1647ite:has(input:checked) {
+        background: rgba(136, 14, 186, 0.3) !important;
+        border: 1px solid #00FFCC !important;
+        box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+    }
+
+    /* Botão de Suporte WhatsApp */
+    .support-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #25D366;
+        color: white !important;
+        padding: 12px;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: bold;
+        margin-top: 30px;
+        transition: 0.3s;
+        box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+    }
+    .support-btn:hover {
+        background-color: #128C7E;
+        transform: scale(1.02);
     }
 
     h1, h2, h3 { 
         color: #FFFFFF !important; 
         font-weight: 700 !important;
         text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-    }
-    
-    label { 
-        font-weight: 600 !important;
-        color: #E0E0E0 !important;
     }
 
     div[data-testid="stBlock"] {
@@ -54,7 +99,6 @@ st.markdown("""
         font-weight: 700 !important;
         border: none;
         text-transform: uppercase;
-        letter-spacing: 1px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -82,7 +126,7 @@ if 'carrinho' not in st.session_state: st.session_state.carrinho = []
 if 'metas' not in st.session_state:
     st.session_state.metas = {"kcal": 3000, "prot": 150, "carb": 350, "gord": 80, "fibra": 35}
 
-# --- 4. LÓGICA DE NAVEGAÇÃO ---
+# --- 4. LOGIN / NAVEGAÇÃO ---
 if not st.session_state.logado:
     st.title("🌱 Login")
     email = st.text_input("E-mail:")
@@ -93,16 +137,36 @@ if not st.session_state.logado:
             st.rerun()
 else:
     df_ali = carregar_alimentos()
-    pagina = st.sidebar.radio("Navegação", ["👤 Perfil", "🍽️ Diário", "🔍 Banco"])
+    
+    # Barra Lateral Customizada
+    with st.sidebar:
+        st.markdown("## ⚡ MENU")
+        pagina = st.radio("Selecione:", ["👤 Perfil", "🍽️ Diário", "🔍 Banco"], label_visibility="collapsed")
+        
+        # Botão de Suporte WhatsApp
+        contato = "5531975747896"
+        mensagem = "Olá! Preciso de ajuda com o Diário Vegano Pro."
+        url_wpp = f"https://wa.me/{contato}?text={mensagem.replace(' ', '%20')}"
+        
+        st.markdown(f"""
+            <a href="{url_wpp}" target="_blank" class="support-btn">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="20" height="20" style="margin-right: 10px;">
+                SUPORTE WHATSAPP
+            </a>
+        """, unsafe_allow_html=True)
 
+    # --- 5. PÁGINAS ---
     if pagina == "👤 Perfil":
         st.header("👤 Metas Diárias")
         m = st.session_state.metas
-        m["kcal"] = st.number_input("Kcal", value=int(m["kcal"]))
-        m["prot"] = st.number_input("Proteína (g)", value=int(m["prot"]))
-        m["carb"] = st.number_input("Carbo (g)", value=int(m["carb"]))
-        m["gord"] = st.number_input("Gordura (g)", value=int(m["gord"]))
-        m["fibra"] = st.number_input("Fibra (g)", value=int(m["fibra"]))
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            m["kcal"] = st.number_input("Kcal", value=int(m["kcal"]))
+            m["prot"] = st.number_input("Proteína (g)", value=int(m["prot"]))
+        with col_m2:
+            m["carb"] = st.number_input("Carbo (g)", value=int(m["carb"]))
+            m["gord"] = st.number_input("Gordura (g)", value=int(m["gord"]))
+            m["fibra"] = st.number_input("Fibra (g)", value=int(m["fibra"]))
 
     elif pagina == "🍽️ Diário":
         st.header("🍽️ Diário Alimentar")
@@ -111,7 +175,8 @@ else:
         with col1:
             st.subheader("Adicionar")
             refeicao = st.selectbox("Refeição", ["Café da Manhã", "Almoço", "Lanche", "Jantar", "Ceia"])
-            ali = st.selectbox("Alimento", df_ali.iloc[:, 0].unique() if not df_ali.empty else ["Nenhum"])
+            ali_opcoes = df_ali.iloc[:, 0].unique() if not df_ali.empty else ["Nenhum"]
+            ali = st.selectbox("Alimento", ali_opcoes)
             qtd = st.number_input("Grams", value=100)
             if st.button("LANÇAR"):
                 row = df_ali[df_ali.iloc[:, 0] == ali].iloc[0]
@@ -162,7 +227,6 @@ else:
 
     elif pagina == "🔍 Banco":
         st.header("🔍 Banco de Alimentos")
-        st.write("Consulte aqui as informações nutricionais baseadas na sua planilha.")
         if not df_ali.empty:
             busca = st.text_input("Filtrar alimento:", "")
             df_filt = df_ali[df_ali.iloc[:, 0].str.contains(busca, case=False, na=False)]
