@@ -44,7 +44,7 @@ def carregar_alimentos():
 if 'logado' not in st.session_state: st.session_state.logado = False
 if 'carrinho' not in st.session_state: st.session_state.carrinho = []
 if 'perfil' not in st.session_state: 
-    st.session_state.perfil = {"tmb": 0, "get": 0, "meta_kcal": 0, "meta_prot": 0}
+    st.session_state.perfil = {"tmb": 0, "get": 0, "meta_kcal": 3000, "meta_prot": 100}
 
 # --- 4. TELA DE LOGIN ---
 if not st.session_state.logado:
@@ -72,12 +72,12 @@ else:
             st.subheader("1. Dados Corporais")
             peso = st.number_input("Peso (kg):", value=68.0, step=0.1)
             altura = st.number_input("Altura (cm):", value=154.0, step=1.0)
-            idade = st.number_input("Idade:", value=20, step=1)
-            sexo = st.selectbox("Sexo Biológico:", ["Masculino", "Feminino"])
+            idade = st.number_input("Idade:", value=23, step=1)
+            sexo = st.selectbox("Sexo Biológico:", ["Feminino", "Masculino"])
             
-            # --- FÓRMULA DE HARRIS-BENEDICT (Sincronizada com Planilha) ---
+            # --- FÓRMULA DE HARRIS-BENEDICT ORIGINAL (Sincronizada com a sua Planilha) ---
             if sexo == "Masculino":
-                tmb_base = 66.47 + (13.75 * peso) + (5.0 * altura) - (6.75 * idade)
+                tmb_base = 66.5 + (13.75 * peso) + (5.0 * altura) - (6.77 * idade)
             else:
                 tmb_base = 655.1 + (9.56 * peso) + (1.85 * altura) - (4.67 * idade)
             
