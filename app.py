@@ -2,115 +2,140 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# --- CONFIGURAÇÃO VISUAL (TEMA VEGANO) ---
+# --- 1. CONFIGURAÇÃO VISUAL (TEMA VEGANO COLORIDO) ---
 st.set_page_config(page_title="Assistente Vegano Pro", page_icon="🌱", layout="wide")
 
-# CSS para forçar cores mais vivas e verdes
+# Estilo personalizado para cores verdes e fundo claro
 st.markdown("""
     <style>
-    .main { background-color: #f0f7f0; }
-    .stButton>button { background-color: #2e7d32; color: white; border-radius: 10px; }
-    .stTextInput>div>div>input { border-color: #2e7d32; }
-    h1, h2, h3 { color: #1b5e20; }
+    .stApp { background-color: #f4f9f4; }
+    .stButton>button { background-color: #2e7d32; color: white; border: none; padding: 10px 20px; border-radius: 8px; }
+    .stButton>button:hover { background-color: #1b5e20; color: white; }
+    h1, h2, h3 { color: #2e7d32; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .stMetric { background-color: white; padding: 15px; border-radius: 10px; border-left: 5px solid #2e7d32; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
     </style>
     """, unsafe_allow_html=True)
 
-# --- BANCO DE DADOS ---
+# --- 2. BANCO DE DADOS (LINKS DA SUA PLANILHA) ---
 ID_PLANILHA = "1bifCd5RseTG-MYvJa3aJwqk0Mdk9-31tfH4BbO2un0w"
-GID_DADOS = "1577491175"
+GID_DADOS = "1577491175"  # Aba de Alimentos
 URL_ALIMENTOS = f"https://docs.google.com/spreadsheets/d/{ID_PLANILHA}/export?format=csv&gid={GID_DADOS}"
 
 @st.cache_data
 def carregar_alimentos():
-    df = pd.read_csv(URL_ALIMENTOS, header=7)
-    df = df.dropna(how='all', axis=1).dropna(how='all', axis=0)
-    col_num = ['CALORIAS', 'PROTEÍNAS', 'CARBOIDRATOS', 'GORDURAS', 'FIBRA']
-    for col in col_num:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col].astype(str).str.replace(',', '.'), errors='coerce')
-    return df
+    try:
+        df = pd.read_csv(URL_ALIMENTOS, header=7)
+        # Limpa colunas e linhas vazias
+        df = df.dropna(how='all', axis=1).dropna(how='all', axis=0)
+        # Converte para números reais (corrige o erro de ordenação/texto)
+        colunas_num = ['CALORIAS', 'PROTEÍNAS', 'CARBOIDRATOS', 'GORDURAS', 'FIBRA']
+        for col in colunas_num:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col].astype(str).str.replace(',', '.'), errors='coerce')
+        return df
+    except Exception as e:
+        st.error(f"Erro ao carregar dados: {e}")
+        return pd.DataFrame()
 
-# --- LÓGICA DE SESSÃO ---
+# --- 3. CONTROLE DE SESSÃO E LOGIN ---
 if 'logado' not in st.session_state: st.session_state.logado = False
 if 'usuario' not in st.session_state: st.session_state.usuario = ""
 if 'carrinho' not in st.session_state: st.session_state.carrinho = []
 
 # --- TELA DE ACESSO ---
 if not st.session_state.logado:
-    st.title("🌱 Bem-vindo ao Assistente Vegano")
-    email = st.text_input("Digite seu e-mail para acessar:")
-    if st.button("Acessar meu Painel"):
-        if "@" in email: # Validação simples de e-mail
-            st.session_state.logado = True
-            st.session_state.usuario = email
-            st.rerun()
-        else:
-            st.error("Por favor, insira um e-mail válido.")
+    st.title("🌱 Assistente Nutricional Vegano")
+    st.write("### Bem-vindo! Por favor, identifique-se para continuar.")
+    
+    with st.container():
+        email = st.text_input("Digite seu e-mail:")
+        if st.button("Acessar meu Painel"):
+            if "@" in email and "." in email:
+                st.session_state.logado = True
+                st.session_state.usuario = email
+                st.rerun()
+            else:
+                st.error("Por favor, insira um e-mail válido para liberar o acesso.")
 
 else:
-    # --- MENU LATERAL ---
-    st.sidebar.image("https://cdn-icons-png.flaticon.com/512/2324/2324483.png", width=100)
-    st.sidebar.write(f"Logado como: **{st.session_state.usuario}**")
-    pagina = st.sidebar.radio("Navegação", ["Diário / Carrinho", "Histórico (Calendário)", "Banco de Alimentos"])
+    # --- 4. MENU LATERAL ---
+    st.sidebar.markdown("# 🌱 Painel Vegano")
+    st.sidebar.write(f"Conectado como: \n **{st.session_state.usuario}**")
+    st.sidebar.divider()
     
-    if st.sidebar.button("Sair"):
+    pagina = st.sidebar.radio("Navegação:", ["🍽️ Montar Refeição", "📅 Histórico Semanal", "🔍 Banco de Alimentos"])
+    
+    st.sidebar.divider()
+    if st.sidebar.button("Sair do Sistema"):
         st.session_state.logado = False
+        st.session_state.usuario = ""
+        st.session_state.carrinho = []
         st.rerun()
 
     df_ali = carregar_alimentos()
 
-    # --- PÁGINA: DIÁRIO / CARRINHO ---
-    if pagina == "Diário / Carrinho":
-        st.header("🍽️ Montar Refeição do Dia")
-        
+    # --- PÁGINA 1: DIÁRIO / CARRINHO ---
+    if pagina == "🍽️ Montar Refeição":
+        st.header("🍽️ Diário de Refeições")
+        st.write("Adicione os alimentos para calcular o total da sua refeição.")
+
         col1, col2 = st.columns([1, 1])
-        
+
         with col1:
-            st.subheader("Adicionar Alimento")
-            ali_sel = st.selectbox("Escolha o alimento:", df_ali.iloc[:, 0].unique())
-            qtd = st.number_input("Quantidade (g):", min_value=1, value=100)
+            st.subheader("➕ Adicionar Alimento")
+            ali_selecionado = st.selectbox("Selecione o alimento:", df_ali.iloc[:, 0].unique())
+            quantidade = st.number_input("Quantidade (gramas):", min_value=1, value=100, step=10)
             
-            if st.button("➕ Adicionar ao Carrinho"):
-                row = df_ali[df_ali.iloc[:, 0] == ali_sel].iloc[0]
-                fator = qtd / 100
-                item = {
-                    "Alimento": ali_sel,
-                    "Qtd": qtd,
-                    "Kcal": round(row['CALORIAS'] * fator, 2),
-                    "Prot": round(row['PROTEÍNAS'] * fator, 2)
+            if st.button("Adicionar ao Prato"):
+                dados = df_ali[df_ali.iloc[:, 0] == ali_selecionado].iloc[0]
+                fator = quantidade / 100
+                novo_item = {
+                    "Alimento": ali_selecionado,
+                    "Gramas": quantidade,
+                    "Kcal": round(dados['CALORIAS'] * fator, 2),
+                    "Prot (g)": round(dados['PROTEÍNAS'] * fator, 2),
+                    "Carb (g)": round(dados['CARBOIDRATOS'] * fator, 2)
                 }
-                st.session_state.carrinho.append(item)
-                st.success(f"{ali_sel} adicionado!")
+                st.session_state.carrinho.append(novo_item)
+                st.toast(f"✅ {ali_selecionado} adicionado!")
 
         with col2:
-            st.subheader("🛒 Itens Selecionados")
+            st.subheader("🛒 Itens da Refeição")
             if st.session_state.carrinho:
-                df_carrinho = pd.DataFrame(st.session_state.carrinho)
-                st.table(df_carrinho)
+                df_c = pd.DataFrame(st.session_state.carrinho)
+                st.table(df_c)
                 
-                total_kcal = df_carrinho['Kcal'].sum()
-                total_prot = df_carrinho['Prot'].sum()
+                # Totais
+                t_kcal = df_c['Kcal'].sum()
+                t_prot = df_c['Prot (g)'].sum()
                 
-                st.metric("Total Calorias", f"{total_kcal:.2f} kcal")
-                st.metric("Total Proteínas", f"{total_prot:.2f} g")
+                c1, c2 = st.columns(2)
+                c1.metric("Total Energia", f"{t_kcal:.2f} kcal")
+                c2.metric("Total Proteína", f"{t_prot:.2f} g")
                 
-                if st.button("💾 Salvar Refeição no Histórico"):
-                    st.warning("Para salvar permanentemente, precisamos configurar a API do Google Sheets (próximo passo!).")
-                    # Aqui simularemos o save
+                if st.button("🗑️ Limpar Carrinho"):
                     st.session_state.carrinho = []
-                    st.success("Refeição salva no seu histórico local!")
+                    st.rerun()
+                
+                if st.button("💾 Salvar no Histórico Permanente"):
+                    st.info("O salvamento permanente requer integração com a API do Google Sheets (próxima etapa!).")
             else:
-                st.info("Seu carrinho está vazio.")
+                st.info("Seu prato ainda está vazio. Escolha um alimento à esquerda!")
 
-    # --- PÁGINA: HISTÓRICO (CALENDÁRIO) ---
-    elif pagina == "Histórico (Calendário)":
-        st.header("📅 Consultar Histórico")
-        data_sel = st.date_input("Selecione o dia para revisar:", datetime.now())
-        st.info(f"Mostrando dados de {data_sel} para {st.session_state.usuario}")
-        # Futuramente: df_hist[df_hist['Data'] == data_sel]
-        st.write("Em breve: Integração completa com a aba 'historico' da planilha.")
+    # --- PÁGINA 2: HISTÓRICO ---
+    elif pagina == "📅 Histórico Semanal":
+        st.header("📅 Meu Histórico")
+        data_consulta = st.date_input("Escolha a data para rever:", datetime.now())
+        st.write(f"Mostrando histórico de: **{data_consulta.strftime('%d/%m/%Y')}**")
+        st.warning("⚠️ O histórico diário será carregado aqui assim que ativarmos a gravação na planilha.")
 
-    # --- PÁGINA: BANCO DE ALIMENTOS ---
-    elif pagina == "Banco de Alimentos":
-        st.header("🔍 Consulta de Alimentos")
-        st.dataframe(df_ali, use_container_width=True, hide_index=True)
+    # --- PÁGINA 3: BANCO DE ALIMENTOS ---
+    elif pagina == "🔍 Banco de Alimentos":
+        st.header("🔍 Consulta de Nutrientes")
+        busca = st.text_input("Pesquise por nome (ex: Proteína, Pão, Feijão):")
+        
+        df_display = df_ali.copy()
+        if busca:
+            df_display = df_display[df_display.iloc[:, 0].str.contains(busca, case=False, na=False)]
+        
+        st.dataframe(df_display, use_container_width=True, hide_index=True)
