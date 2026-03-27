@@ -8,16 +8,12 @@ st.markdown("""
     <style>
     header {visibility: hidden;}
     [data-testid="stHeader"] {display: none;}
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
     .stApp { background-color: #FFFFFF; }
-    html, body, [class*="css"], p, span, label { font-family: 'Roboto', sans-serif !important; color: #333333 !important; }
     h1 { color: #1B5E20 !important; font-weight: 700 !important; }
     h2, h3 { color: #2E7D32 !important; font-weight: 700 !important; }
     [data-testid="stSidebar"] { background-color: #1A1A1A !important; }
     [data-testid="stSidebar"] * { color: #E0E0E0 !important; }
     .stButton>button { background-color: #388E3C; color: white !important; border-radius: 8px; font-weight: 700; width: 100%; border: none; padding: 12px; }
-    .stButton>button:hover { background-color: #2E7D32; }
-    [data-testid="stMetricValue"] { color: #388E3C !important; font-size: 32px !important; font-weight: 700 !important; }
     div[data-testid="stMarkdownContainer"] > blockquote { border-left: 5px solid #2e7d32; background-color: #f1f8e9; padding: 10px; border-radius: 5px; }
     </style>
     """, unsafe_allow_html=True)
@@ -32,8 +28,10 @@ def carregar_alimentos():
     try:
         df = pd.read_csv(URL_ALIMENTOS, header=7)
         df = df.dropna(how='all', axis=1).dropna(how='all', axis=0)
-        cols_num = ['CALORIAS', 'PROTEÍNAS', 'CARBOIDRATOS', 'GORDURAS', 'FIBRA']
-        for col in cols_num:
+        # Sincronizando nomes com a planilha para evitar KeyError
+        cols_map = {'CALORIAS': 'Kcal', 'PROTEÍNAS': 'Proteínas', 'CARBOIDRATOS': 'Carboidratos', 'GORDURAS': 'Gorduras', 'FIBRA': 'Fibras'}
+        df = df.rename(columns=cols_map)
+        for col in cols_map.values():
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col].astype(str).str.replace(',', '.'), errors='coerce').fillna(0)
         return df
@@ -44,7 +42,10 @@ def carregar_alimentos():
 if 'logado' not in st.session_state: st.session_state.logado = False
 if 'carrinho' not in st.session_state: st.session_state.carrinho = []
 if 'perfil' not in st.session_state: 
-    st.session_state.perfil = {"tmb": 0, "get": 0, "meta_kcal": 3000, "meta_prot": 100}
+    st.session_state.perfil = {
+        "tmb": 0, "get": 0, 
+        "m_kcal": 3000, "m_prot": 100, "m_carb": 300, "m_gord": 110, "m_fibra": 40
+    }
 
 # --- 4. TELA DE LOGIN ---
 if not st.session_state.logado:
@@ -56,7 +57,7 @@ if not st.session_state.logado:
             st.session_state.usuario = email
             st.rerun()
 else:
-    st.sidebar.markdown("# 🌱 Painel")
+    st.sidebar.markdown(f"**Usuário:** {st.session_state.usuario}")
     pagina = st.sidebar.radio("Navegação:", ["👤 Meu Perfil (TMB)", "🍽️ Diário de Refeições", "🔍 Banco de Alimentos"])
     if st.sidebar.button("Sair"):
         st.session_state.logado = False
@@ -72,10 +73,9 @@ else:
             st.subheader("1. Dados Corporais")
             peso = st.number_input("Peso (kg):", value=68.0, step=0.1)
             altura = st.number_input("Altura (cm):", value=154.0, step=1.0)
-            idade = st.number_input("Idade:", value=24, step=1)
-            sexo = st.selectbox("Sexo Biológico:", ["FEMININO", "MASCULINO"])
+            idade = st.number_input("Idade:", value=20, step=1)
+            sexo = st.selectbox("Sexo Biológico:", ["MASCULINO", "FEMININO"])
             
-            # --- FÓRMULAS EXATAS DA SUA PLANILHA (Roza & Shizgal) ---
             if sexo == "MASCULINO":
                 tmb_base = 88.36 + (13.4 * peso) + (4.8 * altura) - (5.7 * idade)
             else:
@@ -86,64 +86,70 @@ else:
 
             st.divider()
             st.subheader("2. Nível de Atividade")
-            fatores = {
-                "SEDENTÁRIO": 1.2,
-                "LEVEMENTE ATIVO": 1.38,
-                "MODERADAMENTE ATIVO": 1.55,
-                "MUITO ATIVO": 1.73,
-                "EXTREMAMENTE ATIVO": 1.9
-            }
+            fatores = {"SEDENTÁRIO": 1.2, "LEVEMENTE ATIVO": 1.38, "MODERADAMENTE ATIVO": 1.55, "MUITO ATIVO": 1.73, "EXTREMAMENTE ATIVO": 1.9}
             nivel = st.selectbox("Selecione seu nível:", options=list(fatores.keys()))
             gasto_total = tmb_base * fatores[nivel]
             st.session_state.perfil["get"] = gasto_total
-            st.success(f"Seu Gasto Diário Estimado (GET): **{gasto_total:.2f} kcal**")
+            st.success(f"Gasto Total Diário (GET): **{gasto_total:.2f} kcal**")
 
         with col_metas:
             st.subheader("3. Defina Suas Metas (Manual)")
-            st.session_state.perfil["meta_kcal"] = st.number_input("Sua Meta de Calorias (kcal):", value=3000)
-            st.session_state.perfil["meta_prot"] = st.number_input("Sua Meta de Proteínas (g):", value=100)
+            st.session_state.perfil["m_kcal"] = st.number_input("Meta Calorias (kcal):", value=st.session_state.perfil["m_kcal"])
+            st.session_state.perfil["m_prot"] = st.number_input("Meta Proteínas (g):", value=st.session_state.perfil["m_prot"])
+            st.session_state.perfil["m_carb"] = st.number_input("Meta Carboidratos (g):", value=st.session_state.perfil["m_carb"])
+            st.session_state.perfil["m_gord"] = st.number_input("Meta Gorduras (g):", value=st.session_state.perfil["m_gord"])
+            st.session_state.perfil["m_fibra"] = st.number_input("Meta Fibras (g):", value=st.session_state.perfil["m_fibra"])
             
-            dif = st.session_state.perfil["meta_kcal"] - gasto_total
+            dif = st.session_state.perfil["m_kcal"] - gasto_total
+            status = "Superávit (Ganhar)" if dif > 0 else "Déficit (Perder)"
             st.markdown(f"""
-            > **Resumo do Plano (Sincronizado com Planilha):**
-            > - **Diferença para o GET:** {dif:+.2f} kcal
-            > - **Proteína/kg:** {st.session_state.perfil['meta_prot']/peso:.2f} g/kg
+            > **O que é o Resumo do Plano?**
+            > Ele compara o que você **quer comer** com o que seu **corpo gasta**.
+            > - **Diferença:** {dif:+.2f} kcal ({status})
+            > - **Proteína por Peso:** {st.session_state.perfil['m_prot']/peso:.2f} g/kg
             """)
 
     elif pagina == "🍽️ Diário de Refeições":
         st.header("🍽️ Diário de Refeições")
-        tipo_ref = st.selectbox("Refeição:", ["Café da Manhã", "Lanche", "Almoço", "Jantar", "Ceia"])
+        tipo_ref = st.selectbox("Qual refeição você está fazendo?", ["Café da Manhã", "Lanche", "Almoço", "Jantar", "Ceia"])
         col1, col2 = st.columns([1, 1.3])
+        
         with col1:
-            st.subheader("➕ Adicionar")
-            ali_sel = st.selectbox("Alimento:", df_ali.iloc[:, 0].unique())
+            st.subheader("➕ Adicionar Alimento")
+            ali_sel = st.selectbox("Alimento:", df_ali.iloc[:, 0].unique() if not df_ali.empty else ["Nenhum"])
             qtd = st.number_input("Quantidade (g):", min_value=1, value=100)
-            if st.button("Adicionar ao Prato"):
-                dados = df_ali[df_ali.iloc[:, 0] == ali_sel].iloc[0]
+            if st.button("Adicionar ao Prato") and not df_ali.empty:
+                row = df_ali[df_ali.iloc[:, 0] == ali_sel].iloc[0]
                 f = qtd / 100
                 st.session_state.carrinho.append({
                     "Refeição": tipo_ref, "Alimento": ali_sel, "Gramas": int(qtd),
-                    "Kcal": round(dados['CALORIAS'] * f, 1), "Prot": round(dados['PROTEÍNAS'] * f, 1)
+                    "Kcal": row['Kcal'] * f, "Proteínas": row['Proteínas'] * f,
+                    "Carboidratos": row['Carboidratos'] * f, "Gorduras": row['Gorduras'] * f, "Fibras": row['Fibras'] * f
                 })
                 st.rerun()
+
         with col2:
-            st.subheader("🛒 Resumo")
+            st.subheader("🛒 Resumo do Dia")
             if st.session_state.carrinho:
                 df_c = pd.DataFrame(st.session_state.carrinho)
-                st.dataframe(df_c, use_container_width=True, hide_index=True)
-                total_k, total_p = df_c['Kcal'].sum(), df_c['Prot'].sum()
+                st.dataframe(df_c[['Alimento', 'Gramas', 'Kcal', 'Proteínas']], use_container_width=True, hide_index=True)
+                
+                totais = df_c[['Kcal', 'Proteínas', 'Carboidratos', 'Gorduras', 'Fibras']].sum()
                 st.divider()
-                m1, m2 = st.columns(2)
-                mk, mp = st.session_state.perfil['meta_kcal'], st.session_state.perfil['meta_prot']
-                m1.metric("Kcal Totais", f"{total_k:.0f}", f"{mk - total_k:.0f} faltam" if mk > 0 else None)
-                m2.metric("Proteína", f"{total_p:.1f}g", f"{mp - total_p:.1f}g faltam" if mp > 0 else None)
-                if st.button("🗑️ Limpar"):
+                
+                # Exibição de Métricas comparadas com Metas
+                cols = st.columns(3)
+                cols[0].metric("Calorias", f"{totais['Kcal']:.0f}", f"{st.session_state.perfil['m_kcal'] - totais['Kcal']:.0f} restantes")
+                cols[1].metric("Proteínas", f"{totais['Proteínas']:.1f}g", f"{st.session_state.perfil['m_prot'] - totais['Proteínas']:.1f}g faltam")
+                cols[2].metric("Carbos", f"{totais['Carboidratos']:.1f}g", f"{st.session_state.perfil['m_carb'] - totais['Carboidratos']:.1f}g faltam")
+                
+                if st.button("🗑️ Limpar Diário"):
                     st.session_state.carrinho = []
                     st.rerun()
 
     elif pagina == "🔍 Banco de Alimentos":
-        st.header("🔍 Consulta")
-        busca = st.text_input("Pesquisar:")
+        st.header("🔍 Consulta de Nutrientes")
+        busca = st.text_input("Pesquisar alimento:")
         df_f = df_ali.copy()
         if busca: df_f = df_f[df_f.iloc[:, 0].str.contains(busca, case=False, na=False)]
         st.dataframe(df_f, use_container_width=True, hide_index=True)
