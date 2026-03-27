@@ -110,22 +110,34 @@ else:
 
         with col1:
             st.subheader("Adicionar")
+            refeicao = st.selectbox("Refeição", ["Café da Manhã", "Almoço", "Lanche", "Jantar", "Ceia"])
             ali = st.selectbox("Alimento", df_ali.iloc[:, 0].unique())
             qtd = st.number_input("Grams", value=100)
-            if st.button("Lançar"):
+            if st.button("LANÇAR"):
                 row = df_ali[df_ali.iloc[:, 0] == ali].iloc[0]
                 f = qtd / 100
                 st.session_state.carrinho.append({
-                    "Alimento": ali, "Kcal": row['CALORIAS'] * f, 
-                    "Prot": row['PROTEÍNAS'] * f, "Carb": row['CARBOIDRATOS'] * f, 
-                    "Gord": row['GORDURAS'] * f, "Fibra": row['FIBRA'] * f
+                    "Refeição": refeicao,
+                    "Alimento": ali, 
+                    "Peso": int(qtd),
+                    "Kcal": row['CALORIAS'] * f, 
+                    "Prot": row['PROTEÍNAS'] * f, 
+                    "Carb": row['CARBOIDRATOS'] * f, 
+                    "Gord": row['GORDURAS'] * f, 
+                    "Fibra": row['FIBRA'] * f
                 })
                 st.rerun()
 
         with col2:
             if st.session_state.carrinho:
                 df_c = pd.DataFrame(st.session_state.carrinho)
+                
+                # TABELA DE RESUMO ATUALIZADA
+                st.write("### Alimentos Adicionados")
+                st.dataframe(df_c[["Refeição", "Alimento", "Peso", "Kcal", "Prot"]], use_container_width=True, hide_index=True)
+                
                 tot = df_c.sum(numeric_only=True)
+                st.divider()
                 
                 g1, g2 = st.columns([1, 1.5])
                 
@@ -142,12 +154,13 @@ else:
                     fig_p.update_layout(
                         showlegend=False, 
                         paper_bgcolor='rgba(0,0,0,0)',
-                        font=dict(family="Poppins", color="white")
+                        font=dict(family="Poppins", color="white"),
+                        title=dict(font=dict(size=18))
                     )
                     fig_p.update_traces(textinfo='percent+label', textfont_size=12)
                     st.plotly_chart(fig_p, use_container_width=True)
 
-                # BAR CHART (Corrigido para evitar ValueError)
+                # BAR CHART (FONTES EM BRANCO)
                 with g2:
                     m = st.session_state.metas
                     labs = ["Kcal", "Prot", "Carb", "Gord", "Fibra"]
@@ -164,14 +177,18 @@ else:
                         title="<b>Consumo vs Metas</b>",
                         paper_bgcolor='rgba(0,0,0,0)',
                         plot_bgcolor='rgba(0,0,0,0)',
+                        # ESTILO DAS FONTES EM BRANCO
                         font=dict(family="Poppins", color="white"),
-                        margin=dict(l=0, r=0, t=40, b=0),
+                        xaxis=dict(tickfont=dict(color='white'), gridcolor='rgba(255,255,255,0.1)'),
+                        yaxis=dict(tickfont=dict(color='white')),
+                        legend=dict(font=dict(color='white'), orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                        margin=dict(l=0, r=0, t=50, b=0),
                         height=350,
-                        showlegend=True,
-                        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
                     )
                     st.plotly_chart(fig_b, use_container_width=True)
 
-                if st.button("Limpar Tudo"):
+                if st.button("LIMPAR TUDO"):
                     st.session_state.carrinho = []
                     st.rerun()
+            else:
+                st.info("Nenhum alimento adicionado hoje.")
