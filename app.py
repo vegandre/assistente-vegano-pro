@@ -72,14 +72,14 @@ else:
             st.subheader("1. Dados Corporais")
             peso = st.number_input("Peso (kg):", value=68.0, step=0.1)
             altura = st.number_input("Altura (cm):", value=154.0, step=1.0)
-            idade = st.number_input("Idade:", value=23, step=1)
-            sexo = st.selectbox("Sexo Biológico:", ["Feminino", "Masculino"])
+            idade = st.number_input("Idade:", value=24, step=1)
+            sexo = st.selectbox("Sexo Biológico:", ["FEMININO", "MASCULINO"])
             
-            # --- FÓRMULA DE HARRIS-BENEDICT ORIGINAL (Sincronizada com a sua Planilha) ---
-            if sexo == "Masculino":
-                tmb_base = 66.5 + (13.75 * peso) + (5.0 * altura) - (6.77 * idade)
+            # --- FÓRMULAS EXATAS DA SUA PLANILHA (Roza & Shizgal) ---
+            if sexo == "MASCULINO":
+                tmb_base = 88.36 + (13.4 * peso) + (4.8 * altura) - (5.7 * idade)
             else:
-                tmb_base = 655.1 + (9.56 * peso) + (1.85 * altura) - (4.67 * idade)
+                tmb_base = 447.6 + (9.2 * peso) + (3.1 * altura) - (4.3 * idade)
             
             st.session_state.perfil["tmb"] = tmb_base
             st.info(f"Sua TMB Base: **{tmb_base:.2f} kcal**")
@@ -87,11 +87,11 @@ else:
             st.divider()
             st.subheader("2. Nível de Atividade")
             fatores = {
-                "Sedentário": 1.2,
-                "Levemente ativo": 1.38,
-                "Moderadamente ativo": 1.55,
-                "Muito ativo": 1.73,
-                "Extremamente ativo": 1.9
+                "SEDENTÁRIO": 1.2,
+                "LEVEMENTE ATIVO": 1.38,
+                "MODERADAMENTE ATIVO": 1.55,
+                "MUITO ATIVO": 1.73,
+                "EXTREMAMENTE ATIVO": 1.9
             }
             nivel = st.selectbox("Selecione seu nível:", options=list(fatores.keys()))
             gasto_total = tmb_base * fatores[nivel]
@@ -105,7 +105,7 @@ else:
             
             dif = st.session_state.perfil["meta_kcal"] - gasto_total
             st.markdown(f"""
-            > **Resumo do Plano (Fórmula Harris-Benedict):**
+            > **Resumo do Plano (Sincronizado com Planilha):**
             > - **Diferença para o GET:** {dif:+.2f} kcal
             > - **Proteína/kg:** {st.session_state.perfil['meta_prot']/peso:.2f} g/kg
             """)
