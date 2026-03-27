@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# --- 2. CSS PERSONALIZADO (ESTILIZAÇÃO AVANÇADA) ---
+# --- 2. CSS PERSONALIZADO ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
@@ -23,35 +23,30 @@ st.markdown("""
         color: #FFFFFF !important;
     }
 
-    /* Estilização da Barra Lateral */
     [data-testid="stSidebar"] { 
         background: rgba(14, 2, 26, 0.95) !important;
         border-right: 2px solid rgba(136, 14, 186, 0.5);
     }
 
-    /* Títulos e Labels no Menu Lateral */
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] .stMarkdown {
         color: #00FFCC !important;
         font-weight: 700 !important;
     }
 
-    /* Estilização dos Radio Buttons (Menu Lateral) */
+    /* Estilização do Menu Lateral */
     div[data-testid="stSidebarUserContent"] .st-emotion-cache-1647ite {
         background-color: rgba(255, 255, 255, 0.05);
         border-radius: 12px;
         padding: 10px;
         margin-bottom: 10px;
         border: 1px solid rgba(136, 14, 186, 0.2);
-        transition: all 0.3s ease;
     }
     
     div[data-testid="stSidebarUserContent"] label {
         font-size: 18px !important;
         color: #FFFFFF !important;
-        cursor: pointer;
     }
 
-    /* Destaque para o item selecionado */
     div[data-testid="stSidebarUserContent"] .st-emotion-cache-1647ite:has(input:checked) {
         background: rgba(136, 14, 186, 0.3) !important;
         border: 1px solid #00FFCC !important;
@@ -69,13 +64,16 @@ st.markdown("""
         border-radius: 50px;
         text-decoration: none;
         font-weight: bold;
-        margin-top: 30px;
-        transition: 0.3s;
+        margin-top: 20px;
         box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
     }
-    .support-btn:hover {
-        background-color: #128C7E;
-        transform: scale(1.02);
+
+    /* Botão de Logout personalizado */
+    .stButton>button[kind="secondary"] {
+        background: rgba(255, 75, 75, 0.1);
+        color: #FF4B4B !important;
+        border: 1px solid #FF4B4B;
+        width: 100%;
     }
 
     h1, h2, h3 { 
@@ -98,7 +96,6 @@ st.markdown("""
         border-radius: 10px; 
         font-weight: 700 !important;
         border: none;
-        text-transform: uppercase;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -126,7 +123,7 @@ if 'carrinho' not in st.session_state: st.session_state.carrinho = []
 if 'metas' not in st.session_state:
     st.session_state.metas = {"kcal": 3000, "prot": 150, "carb": 350, "gord": 80, "fibra": 35}
 
-# --- 4. LOGIN / NAVEGAÇÃO ---
+# --- 4. LOGIN / LOGOUT ---
 if not st.session_state.logado:
     st.title("🌱 Login")
     email = st.text_input("E-mail:")
@@ -138,32 +135,31 @@ if not st.session_state.logado:
 else:
     df_ali = carregar_alimentos()
     
-    # Barra Lateral Customizada
     with st.sidebar:
+        # SEÇÃO DO USUÁRIO
+        st.markdown(f"### 👤 {st.session_state.usuario}")
+        if st.button("SAIR", type="secondary"):
+            st.session_state.logado = False
+            st.rerun()
+        
+        st.divider()
         st.markdown("## ⚡ MENU")
-        pagina = st.radio("Selecione:", ["👤 Perfil", "🍽️ Diário", "🔍 Banco"], label_visibility="collapsed")
+        pagina = st.radio("Navegação:", ["👤 Perfil", "🍽️ Diário", "🔍 Banco"], label_visibility="collapsed")
         
-        # Botão de Suporte WhatsApp
+        # SUPORTE
         contato = "5531975747896"
-        mensagem = "Olá! Preciso de ajuda com o Diário Vegano Pro."
-        url_wpp = f"https://wa.me/{contato}?text={mensagem.replace(' ', '%20')}"
-        
-        st.markdown(f"""
-            <a href="{url_wpp}" target="_blank" class="support-btn">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="20" height="20" style="margin-right: 10px;">
-                SUPORTE WHATSAPP
-            </a>
-        """, unsafe_allow_html=True)
+        url_wpp = f"https://wa.me/{contato}?text=Olá!%20Preciso%20de%20ajuda%20com%20o%20Diário%20Vegano%20Pro."
+        st.markdown(f'<a href="{url_wpp}" target="_blank" class="support-btn">SUPORTE WHATSAPP</a>', unsafe_allow_html=True)
 
     # --- 5. PÁGINAS ---
     if pagina == "👤 Perfil":
         st.header("👤 Metas Diárias")
         m = st.session_state.metas
-        col_m1, col_m2 = st.columns(2)
-        with col_m1:
+        c1, c2 = st.columns(2)
+        with c1:
             m["kcal"] = st.number_input("Kcal", value=int(m["kcal"]))
             m["prot"] = st.number_input("Proteína (g)", value=int(m["prot"]))
-        with col_m2:
+        with c2:
             m["carb"] = st.number_input("Carbo (g)", value=int(m["carb"]))
             m["gord"] = st.number_input("Gordura (g)", value=int(m["gord"]))
             m["fibra"] = st.number_input("Fibra (g)", value=int(m["fibra"]))
@@ -171,12 +167,10 @@ else:
     elif pagina == "🍽️ Diário":
         st.header("🍽️ Diário Alimentar")
         col1, col2 = st.columns([1, 2])
-
         with col1:
             st.subheader("Adicionar")
             refeicao = st.selectbox("Refeição", ["Café da Manhã", "Almoço", "Lanche", "Jantar", "Ceia"])
-            ali_opcoes = df_ali.iloc[:, 0].unique() if not df_ali.empty else ["Nenhum"]
-            ali = st.selectbox("Alimento", ali_opcoes)
+            ali = st.selectbox("Alimento", df_ali.iloc[:, 0].unique() if not df_ali.empty else ["Nenhum"])
             qtd = st.number_input("Grams", value=100)
             if st.button("LANÇAR"):
                 row = df_ali[df_ali.iloc[:, 0] == ali].iloc[0]
@@ -191,10 +185,9 @@ else:
         with col2:
             if st.session_state.carrinho:
                 df_c = pd.DataFrame(st.session_state.carrinho)
-                cols_exis = [c for c in ["Refeição", "Alimento", "Peso", "Kcal", "Prot"] if c in df_c.columns]
-                
+                cols = [c for c in ["Refeição", "Alimento", "Peso", "Kcal", "Prot"] if c in df_c.columns]
                 st.write("### Itens Lançados")
-                st.dataframe(df_c[cols_exis], use_container_width=True, hide_index=True)
+                st.dataframe(df_c[cols], use_container_width=True, hide_index=True)
                 
                 tot = df_c.sum(numeric_only=True)
                 st.divider()
@@ -203,7 +196,6 @@ else:
                 with g1:
                     fig_p = px.pie(names=["Proteínas", "Carbos", "Gorduras"], values=[tot['Prot']*4, tot['Carb']*4, tot['Gord']*9], hole=0.6, title="<b>% Calórica</b>", color_discrete_sequence=['#00BFFF', '#00FFCC', '#8A2BE2'])
                     fig_p.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', font=dict(family="Poppins", color="white"), title=dict(font=dict(size=18, color="white")))
-                    fig_p.update_traces(textinfo='percent+label', textfont_size=11)
                     st.plotly_chart(fig_p, use_container_width=True)
 
                 with g2:
@@ -212,13 +204,12 @@ else:
                     v_cons = [tot['Kcal'], tot['Prot'], tot['Carb'], tot['Gord'], tot['Fibra']]
                     v_meta = [m['kcal'], m['prot'], m['carb'], m['gord'], m['fibra']]
                     v_rest = [max(0, mv - cv) for mv, cv in zip(v_meta, v_cons)]
-
                     fig_b = go.Figure()
                     fig_b.add_trace(go.Bar(y=labs, x=v_cons, orientation='h', name='Consumido', marker_color='#CCFF00'))
                     fig_b.add_trace(go.Bar(y=labs, x=v_rest, orientation='h', name='Restante', marker_color='#2A2A2A'))
-                    fig_b.update_layout(barmode='stack', title="<b>Consumo vs Metas</b>", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(family="Poppins", color="white"), xaxis=dict(tickfont=dict(color='white')), yaxis=dict(tickfont=dict(color='white')), legend=dict(font=dict(color='white'), orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1), margin=dict(l=0, r=0, t=50, b=0), height=350)
+                    fig_b.update_layout(barmode='stack', title="<b>Consumo vs Metas</b>", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(family="Poppins", color="white"), xaxis=dict(tickfont=dict(color='white')), yaxis=dict(tickfont=dict(color='white')), legend=dict(font=dict(color='white'), orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
                     st.plotly_chart(fig_b, use_container_width=True)
-
+                
                 if st.button("LIMPAR TUDO"):
                     st.session_state.carrinho = []
                     st.rerun()
@@ -231,5 +222,3 @@ else:
             busca = st.text_input("Filtrar alimento:", "")
             df_filt = df_ali[df_ali.iloc[:, 0].str.contains(busca, case=False, na=False)]
             st.dataframe(df_filt, use_container_width=True, hide_index=True)
-        else:
-            st.error("Não foi possível carregar os dados da planilha.")
