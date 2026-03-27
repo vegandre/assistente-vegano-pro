@@ -2,10 +2,21 @@ import streamlit as st
 import pandas as pd
 
 # --- 1. CONFIGURAÇÃO VISUAL ---
-st.set_page_config(page_title="Assistente Vegano Pro", page_icon="🌱", layout="wide")
+st.set_page_config(
+    page_title="Assistente Vegano Pro", 
+    page_icon="🌱", 
+    layout="wide",
+    initial_sidebar_state="expanded"  # FORÇA A BARRA LATERAL A APARECER
+)
 
 st.markdown("""
     <style>
+    /* Garante que o botão de abrir a sidebar (setinha) seja visível */
+    [data-testid="stSidebarCollapsedControl"] {
+        display: block !important;
+        color: #1B5E20 !important;
+    }
+
     header {visibility: hidden;}
     [data-testid="stHeader"] {display: none;}
     
@@ -19,7 +30,7 @@ st.markdown("""
     }
     
     .stApp { background-color: #FFFFFF; }
-    [data-testid="stSidebar"] { background-color: #1A1A1A !important; }
+    [data-testid="stSidebar"] { background-color: #1A1A1A !important; min-width: 250px !important; }
     [data-testid="stSidebar"] * { color: #E0E0E0 !important; }
     
     /* Estilização dos Botões */
@@ -39,9 +50,6 @@ st.markdown("""
         background-color: #f1f8e9; 
         padding: 15px; 
         border-radius: 5px; 
-        color: #333333 !important;
-    }
-    div[data-testid="stMarkdownContainer"] > blockquote p {
         color: #333333 !important;
     }
     </style>
@@ -70,7 +78,7 @@ def carregar_alimentos():
 if 'logado' not in st.session_state: st.session_state.logado = False
 if 'carrinho' not in st.session_state: st.session_state.carrinho = []
 
-metas_iniciais = {"kcal": 3000, "prot": 100, "carb": 300, "gord": 110, "fibra": 40, "get": 0}
+metas_iniciais = {"kcal": 3100, "prot": 200, "carb": 300, "gord": 110, "fibra": 40, "get": 0}
 if 'metas' not in st.session_state:
     st.session_state.metas = metas_iniciais
 else:
@@ -88,9 +96,15 @@ if not st.session_state.logado:
             st.session_state.usuario = email
             st.rerun()
 else:
-    st.sidebar.markdown(f"**Conectado como:**\n{st.session_state.usuario}")
-    pagina = st.sidebar.radio("Ir para:", ["👤 Perfil & TMB", "🍽️ Diário de Comida", "🔍 Banco de Dados"])
+    # BARRA LATERAL (SIDEBAR)
+    st.sidebar.title("🌱 Menu")
+    st.sidebar.markdown(f"**Usuário:** {st.session_state.usuario}")
+    pagina = st.sidebar.radio("Navegação:", ["👤 Perfil & TMB", "🍽️ Diário Alimentar", "🔍 Banco de Dados"])
     
+    if st.sidebar.button("Sair / Logoff"):
+        st.session_state.logado = False
+        st.rerun()
+
     df_ali = carregar_alimentos()
 
     # --- PÁGINA PERFIL ---
@@ -105,12 +119,13 @@ else:
             idade = st.number_input("Idade", value=20, step=1)
             sexo = st.selectbox("Sexo Biológico", ["MASCULINO", "FEMININO"])
             
+            # Cálculo de Roza e Shizgal (Planilha)
             if sexo == "MASCULINO":
                 tmb = 88.36 + (13.4 * peso) + (4.8 * altura) - (5.7 * idade)
             else:
                 tmb = 447.6 + (9.2 * peso) + (3.1 * altura) - (4.3 * idade)
             
-            st.info(f"Sua Taxa Metabólica Basal: **{tmb:.2f} kcal**")
+            st.info(f"Sua TMB Base: **{tmb:.2f} kcal**")
 
             st.divider()
             st.subheader("2. Atividade Física")
@@ -135,16 +150,16 @@ else:
             """)
 
     # --- PÁGINA DIÁRIO ---
-    elif pagina == "🍽️ Diário de Comida":
-        st.header("🍽️ Diário Alimentar")
+    elif pagina == "🍽️ Diário Alimentar":
+        st.header("🍽️ Diário de Comida")
         col1, col2 = st.columns([1, 1.3])
         
         with col1:
-            st.subheader("➕ Novo Item")
+            st.subheader("➕ Adicionar Item")
             if not df_ali.empty:
                 ali_sel = st.selectbox("Escolha o alimento:", df_ali.iloc[:, 0].unique())
                 qtd = st.number_input("Peso (g):", min_value=1, value=100)
-                if st.button("Lançar no Diário"):
+                if st.button("Adicionar ao Dia"):
                     row = df_ali[df_ali.iloc[:, 0] == ali_sel].iloc[0]
                     f = qtd / 100
                     st.session_state.carrinho.append({
@@ -155,7 +170,7 @@ else:
                     st.rerun()
 
         with col2:
-            st.subheader("📊 Balanço do Dia")
+            st.subheader("📊 Totais de Hoje")
             if st.session_state.carrinho:
                 df_c = pd.DataFrame(st.session_state.carrinho)
                 st.dataframe(df_c[['Alimento', 'Gramas', 'Kcal', 'Prot']], use_container_width=True, hide_index=True)
@@ -163,22 +178,18 @@ else:
                 t = df_c.sum(numeric_only=True)
                 st.divider()
                 c = st.columns(3)
-                c[0].metric("Calorias", f"{t['Kcal']:.0f}", f"{st.session_state.metas['kcal'] - t['Kcal']:.0f} restam")
-                c[1].metric("Proteínas", f"{t['Prot']:.1f}g", f"{st.session_state.metas['prot'] - t['Prot']:.1f}g restam")
-                c[2].metric("Carbos", f"{t['Carb']:.1f}g", f"{st.session_state.metas['carb'] - t['Carb']:.1f}g restam")
+                c[0].metric("Calorias", f"{t['Kcal']:.0f}", f"{st.session_state.metas['kcal'] - t['Kcal']:.0f} restantes")
+                c[1].metric("Proteínas", f"{t['Prot']:.1f}g", f"{st.session_state.metas['prot'] - t['Prot']:.1f}g faltam")
+                c[2].metric("Carbos", f"{t['Carb']:.1f}g", f"{st.session_state.metas['carb'] - t['Carb']:.1f}g faltam")
                 
-                if st.button("🗑️ Resetar Diário"):
+                if st.button("🗑️ Limpar Tudo"):
                     st.session_state.carrinho = []
                     st.rerun()
 
     # --- PÁGINA BANCO ---
     elif pagina == "🔍 Banco de Dados":
-        st.header("🔍 Consulta de Nutrientes")
-        busca = st.text_input("Digite o nome do alimento:")
+        st.header("🔍 Tabela de Nutrientes")
+        busca = st.text_input("Filtrar alimento:")
         df_f = df_ali.copy()
         if busca: df_f = df_f[df_f.iloc[:, 0].str.contains(busca, case=False, na=False)]
         st.dataframe(df_f, use_container_width=True, hide_index=True)
-
-    if st.sidebar.button("Logoff"):
-        st.session_state.logado = False
-        st.rerun()
