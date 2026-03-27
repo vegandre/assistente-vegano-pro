@@ -111,54 +111,34 @@ else:
         with col1:
             st.subheader("Adicionar")
             refeicao = st.selectbox("Refeição", ["Café da Manhã", "Almoço", "Lanche", "Jantar", "Ceia"])
-            ali = st.selectbox("Alimento", df_ali.iloc[:, 0].unique())
+            ali = st.selectbox("Alimento", df_ali.iloc[:, 0].unique() if not df_ali.empty else ["Nenhum"])
             qtd = st.number_input("Grams", value=100)
             if st.button("LANÇAR"):
                 row = df_ali[df_ali.iloc[:, 0] == ali].iloc[0]
                 f = qtd / 100
                 st.session_state.carrinho.append({
-                    "Refeição": refeicao,
-                    "Alimento": ali, 
-                    "Peso": int(qtd),
-                    "Kcal": row['CALORIAS'] * f, 
-                    "Prot": row['PROTEÍNAS'] * f, 
-                    "Carb": row['CARBOIDRATOS'] * f, 
-                    "Gord": row['GORDURAS'] * f, 
-                    "Fibra": row['FIBRA'] * f
+                    "Refeição": refeicao, "Alimento": ali, "Peso": int(qtd),
+                    "Kcal": row['CALORIAS'] * f, "Prot": row['PROTEÍNAS'] * f, 
+                    "Carb": row['CARBOIDRATOS'] * f, "Gord": row['GORDURAS'] * f, "Fibra": row['FIBRA'] * f
                 })
                 st.rerun()
 
         with col2:
             if st.session_state.carrinho:
                 df_c = pd.DataFrame(st.session_state.carrinho)
+                cols_exis = [c for c in ["Refeição", "Alimento", "Peso", "Kcal", "Prot"] if c in df_c.columns]
                 
-                # CORREÇÃO DO ERRO: Seleciona apenas colunas que realmente existem
-                colunas_desejadas = ["Refeição", "Alimento", "Peso", "Kcal", "Prot"]
-                colunas_existentes = [c for c in colunas_desejadas if c in df_c.columns]
-                
-                st.write("### Alimentos Adicionados")
-                st.dataframe(df_c[colunas_existentes], use_container_width=True, hide_index=True)
+                st.write("### Itens Lançados")
+                st.dataframe(df_c[cols_exis], use_container_width=True, hide_index=True)
                 
                 tot = df_c.sum(numeric_only=True)
                 st.divider()
                 
                 g1, g2 = st.columns([1, 1.5])
-                
                 with g1:
-                    vals = [tot['Prot']*4, tot['Carb']*4, tot['Gord']*9]
-                    fig_p = px.pie(
-                        names=["Proteínas", "Carbos", "Gorduras"],
-                        values=vals,
-                        hole=0.6,
-                        title="<b>% Calórica</b>",
-                        color_discrete_sequence=['#00BFFF', '#00FFCC', '#8A2BE2']
-                    )
-                    fig_p.update_layout(
-                        showlegend=False, paper_bgcolor='rgba(0,0,0,0)',
-                        font=dict(family="Poppins", color="white"),
-                        title=dict(font=dict(size=18, color="white"))
-                    )
-                    fig_p.update_traces(textinfo='percent+label', textfont_size=12)
+                    fig_p = px.pie(names=["Proteínas", "Carbos", "Gorduras"], values=[tot['Prot']*4, tot['Carb']*4, tot['Gord']*9], hole=0.6, title="<b>% Calórica</b>", color_discrete_sequence=['#00BFFF', '#00FFCC', '#8A2BE2'])
+                    fig_p.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', font=dict(family="Poppins", color="white"), title=dict(font=dict(size=18, color="white")))
+                    fig_p.update_traces(textinfo='percent+label', textfont_size=11)
                     st.plotly_chart(fig_p, use_container_width=True)
 
                 with g2:
@@ -171,23 +151,21 @@ else:
                     fig_b = go.Figure()
                     fig_b.add_trace(go.Bar(y=labs, x=v_cons, orientation='h', name='Consumido', marker_color='#CCFF00'))
                     fig_b.add_trace(go.Bar(y=labs, x=v_rest, orientation='h', name='Restante', marker_color='#2A2A2A'))
-                    
-                    fig_b.update_layout(
-                        barmode='stack',
-                        title="<b>Consumo vs Metas</b>",
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        plot_bgcolor='rgba(0,0,0,0)',
-                        font=dict(family="Poppins", color="white"), # Fonte Geral Branca
-                        xaxis=dict(tickfont=dict(color='white'), gridcolor='rgba(255,255,255,0.1)'), # Eixo X Branco
-                        yaxis=dict(tickfont=dict(color='white')), # Eixo Y Branco
-                        legend=dict(font=dict(color='white'), orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                        margin=dict(l=0, r=0, t=50, b=0),
-                        height=350,
-                    )
+                    fig_b.update_layout(barmode='stack', title="<b>Consumo vs Metas</b>", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(family="Poppins", color="white"), xaxis=dict(tickfont=dict(color='white')), yaxis=dict(tickfont=dict(color='white')), legend=dict(font=dict(color='white'), orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1), margin=dict(l=0, r=0, t=50, b=0), height=350)
                     st.plotly_chart(fig_b, use_container_width=True)
 
                 if st.button("LIMPAR TUDO"):
                     st.session_state.carrinho = []
                     st.rerun()
             else:
-                st.info("Adicione um alimento para ver as estatísticas.")
+                st.info("Lance um alimento para ativar os gráficos.")
+
+    elif pagina == "🔍 Banco":
+        st.header("🔍 Banco de Alimentos")
+        st.write("Consulte aqui as informações nutricionais baseadas na sua planilha.")
+        if not df_ali.empty:
+            busca = st.text_input("Filtrar alimento:", "")
+            df_filt = df_ali[df_ali.iloc[:, 0].str.contains(busca, case=False, na=False)]
+            st.dataframe(df_filt, use_container_width=True, hide_index=True)
+        else:
+            st.error("Não foi possível carregar os dados da planilha.")
