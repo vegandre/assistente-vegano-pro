@@ -96,13 +96,13 @@ else:
     pagina = st.sidebar.radio("Navegação", ["👤 Perfil", "🍽️ Diário", "🔍 Banco"])
 
     if pagina == "👤 Perfil":
-        st.header("👤 Metas")
+        st.header("👤 Metas Diárias")
         m = st.session_state.metas
-        m["kcal"] = st.number_input("Kcal", value=m["kcal"])
-        m["prot"] = st.number_input("Proteína (g)", value=m["prot"])
-        m["carb"] = st.number_input("Carbo (g)", value=m["carb"])
-        m["gord"] = st.number_input("Gordura (g)", value=m["gord"])
-        m["fibra"] = st.number_input("Fibra (g)", value=m["fibra"])
+        m["kcal"] = st.number_input("Kcal", value=int(m["kcal"]))
+        m["prot"] = st.number_input("Proteína (g)", value=int(m["prot"]))
+        m["carb"] = st.number_input("Carbo (g)", value=int(m["carb"]))
+        m["gord"] = st.number_input("Gordura (g)", value=int(m["gord"]))
+        m["fibra"] = st.number_input("Fibra (g)", value=int(m["fibra"]))
 
     elif pagina == "🍽️ Diário":
         st.header("🍽️ Diário Alimentar")
@@ -132,16 +132,18 @@ else:
             if st.session_state.carrinho:
                 df_c = pd.DataFrame(st.session_state.carrinho)
                 
-                # TABELA DE RESUMO ATUALIZADA
+                # CORREÇÃO DO ERRO: Seleciona apenas colunas que realmente existem
+                colunas_desejadas = ["Refeição", "Alimento", "Peso", "Kcal", "Prot"]
+                colunas_existentes = [c for c in colunas_desejadas if c in df_c.columns]
+                
                 st.write("### Alimentos Adicionados")
-                st.dataframe(df_c[["Refeição", "Alimento", "Peso", "Kcal", "Prot"]], use_container_width=True, hide_index=True)
+                st.dataframe(df_c[colunas_existentes], use_container_width=True, hide_index=True)
                 
                 tot = df_c.sum(numeric_only=True)
                 st.divider()
                 
                 g1, g2 = st.columns([1, 1.5])
                 
-                # DONUT CHART
                 with g1:
                     vals = [tot['Prot']*4, tot['Carb']*4, tot['Gord']*9]
                     fig_p = px.pie(
@@ -152,15 +154,13 @@ else:
                         color_discrete_sequence=['#00BFFF', '#00FFCC', '#8A2BE2']
                     )
                     fig_p.update_layout(
-                        showlegend=False, 
-                        paper_bgcolor='rgba(0,0,0,0)',
+                        showlegend=False, paper_bgcolor='rgba(0,0,0,0)',
                         font=dict(family="Poppins", color="white"),
-                        title=dict(font=dict(size=18))
+                        title=dict(font=dict(size=18, color="white"))
                     )
                     fig_p.update_traces(textinfo='percent+label', textfont_size=12)
                     st.plotly_chart(fig_p, use_container_width=True)
 
-                # BAR CHART (FONTES EM BRANCO)
                 with g2:
                     m = st.session_state.metas
                     labs = ["Kcal", "Prot", "Carb", "Gord", "Fibra"]
@@ -177,10 +177,9 @@ else:
                         title="<b>Consumo vs Metas</b>",
                         paper_bgcolor='rgba(0,0,0,0)',
                         plot_bgcolor='rgba(0,0,0,0)',
-                        # ESTILO DAS FONTES EM BRANCO
-                        font=dict(family="Poppins", color="white"),
-                        xaxis=dict(tickfont=dict(color='white'), gridcolor='rgba(255,255,255,0.1)'),
-                        yaxis=dict(tickfont=dict(color='white')),
+                        font=dict(family="Poppins", color="white"), # Fonte Geral Branca
+                        xaxis=dict(tickfont=dict(color='white'), gridcolor='rgba(255,255,255,0.1)'), # Eixo X Branco
+                        yaxis=dict(tickfont=dict(color='white')), # Eixo Y Branco
                         legend=dict(font=dict(color='white'), orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                         margin=dict(l=0, r=0, t=50, b=0),
                         height=350,
@@ -191,4 +190,4 @@ else:
                     st.session_state.carrinho = []
                     st.rerun()
             else:
-                st.info("Nenhum alimento adicionado hoje.")
+                st.info("Adicione um alimento para ver as estatísticas.")
